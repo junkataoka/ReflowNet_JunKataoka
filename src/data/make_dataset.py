@@ -206,19 +206,21 @@ def main(input_filepath, output_filepath, rm_geom, target_geom, test_recipe):
         seq_len=15, geom_id=target_geom, num_recipe=3)
 
     input_tensor = torch.FloatTensor(a).cuda()
-    tar_input = (input_tensor - res_min[None, None, :, None, None]) / \
+    input_tensor = (input_tensor - res_min[None, None, :, None, None]) / \
         (res_max[None, None, :, None, None] - res_min[None, None, :, None, None])
 
+    # Split tar domain input data (training)
     tar_input_train = torch.index_select(
-        tar_input, dim=0,
-        index=torch.tensor([test_recipe]).cuda()
+        input_tensor, dim=0, 
+        index=torch.tensor([i for i in range(len(input_tensor)) if i != test_recipe]).cuda()
         )
     tar_input_train = tar_input_train.cpu().numpy()
     SaveInputAsText(tar_input_train, output_filepath, "tar", "train")
 
+    # Split tar domain input data (testing)
     tar_input_test = torch.index_select(
-        tar_input, dim=0, 
-        index=torch.tensor([i for i in range(len(tar_input)) if i != test_recipe]).cuda()
+        input_tensor, dim=0,
+        index=torch.tensor([test_recipe]).cuda()
         )
     tar_input_test = tar_input_test.cpu().numpy()
     SaveInputAsText(tar_input_test, output_filepath, "tar", "test")

@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import Dataset, DataLoader, RandomSampler
+from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler, RandomSampler
 import glob
 import os
 import numpy as np
@@ -17,6 +17,8 @@ class ReflowDataset(Dataset):
         return len(self.recipe_id)
 
     def __getitem__(self, recipe_idx):
+        print(recipe_idx)
+
         geom = torch.stack([torch.FloatTensor(np.loadtxt(c, delimiter=" ")) for c in self.geom if recipe_idx == int(c.split("/")[-1].split("-")[0])], dim=0)
         heatmap = torch.stack([torch.FloatTensor(np.loadtxt(c, delimiter=" ")) for c in self.heatmap if recipe_idx == int(c.split("/")[-1].split("-")[0])], dim=0)
 
@@ -25,8 +27,20 @@ class ReflowDataset(Dataset):
 
         return x, y
 
-def generate_dataloader(geom_path, heatmap_path, recipe_path, batch_size, shuffle=True, drop_last=True, sourc):
-    dataset = ReflowDataset(geom_path, heatmap_path, recipe_path)
-    tar_sampler = RandomSampler(dataset, replace=True, num_samples=M)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
+def generate_dataloader(geom_path, heatmap_path, recipe_path, batch_size, train=True, M=None):
+    dataset = ReflowDataset(geom_path, heatmap_path, recipe_path)
+    if train:
+
+        if len(dataset) < M:
+            indices = np.random.randint(0, len(dataset), M)
+            sampler = SubsetRandomSampler(indices)
+        else:
+            sampler = RandomSampler(dataset, replacement=True)
+
+        dataloader = DataLoader(dataset, sampler=sampler, batch_size=batch_size)
+
+    else:
+        dataloader = DataLoader(dataset, shuffle=False, batch_size=1)
+
+    return dataloader

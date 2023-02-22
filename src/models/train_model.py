@@ -70,7 +70,6 @@ def main(beta, n_hidden_dim, lr, model_path, channel):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=(beta[0], beta[1]))
     batch_number = count_epoch_on_large_dataset(train_loader_target, train_loader_source, args)
     num_itern_total = args.epochs * batch_number
-
  
 
 class OvenLightningModule(pl.LightningModule):
