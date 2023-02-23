@@ -130,9 +130,9 @@ def SaveOutputAsText(recipe, output_filepath, domain, train):
 
 def MinMaxNormalize(input_tensor):
     b, s, c, w, h = input_tensor.shape
-    res_max = torch.zeros(c).cuda()
+    res_max = torch.zeros(c)
     res_min = torch.ones(c) * 1e+10
-    res_min = res_min.cuda()
+    res_min = res_min
     for i in range(input_tensor.shape[0]):
 
         for j in range(input_tensor.shape[1]):
@@ -191,9 +191,9 @@ def main(input_filepath, output_filepath, rm_geom, target_geom, test_recipe):
         root_heatmap=os.path.join(input_filepath, "heatmap_simulation"),
         seq_len=15, num_geom=12, num_recipe=81,
         remove_geom=rm_geom)
-    input_tensor = torch.FloatTensor(a).cuda()
+    input_tensor = torch.FloatTensor(a)
     res_min, res_max = MinMaxNormalize(input_tensor)
-    res_min, res_max = res_min.cuda(), res_max.cuda()
+    res_min, res_max = res_min, res_max
     src_input = (input_tensor - res_min[None, None, :, None, None]) / \
         (res_max[None, None, :, None, None] - res_min[None, None, :, None, None])
     src_input = src_input.cpu().numpy()
@@ -205,14 +205,14 @@ def main(input_filepath, output_filepath, rm_geom, target_geom, test_recipe):
         root_heatmap=os.path.join(input_filepath, "heatmap_experiment"),
         seq_len=15, geom_id=target_geom, num_recipe=3)
 
-    input_tensor = torch.FloatTensor(a).cuda()
+    input_tensor = torch.FloatTensor(a)
     input_tensor = (input_tensor - res_min[None, None, :, None, None]) / \
         (res_max[None, None, :, None, None] - res_min[None, None, :, None, None])
 
     # Split tar domain input data (training)
     tar_input_train = torch.index_select(
         input_tensor, dim=0, 
-        index=torch.tensor([i for i in range(len(input_tensor)) if i != test_recipe]).cuda()
+        index=torch.tensor([i for i in range(len(input_tensor)) if i != test_recipe])
         )
     tar_input_train = tar_input_train.cpu().numpy()
     SaveInputAsText(tar_input_train, output_filepath, "tar", "train")
@@ -220,7 +220,7 @@ def main(input_filepath, output_filepath, rm_geom, target_geom, test_recipe):
     # Split tar domain input data (testing)
     tar_input_test = torch.index_select(
         input_tensor, dim=0,
-        index=torch.tensor([test_recipe]).cuda()
+        index=torch.tensor([test_recipe])
         )
     tar_input_test = tar_input_test.cpu().numpy()
     SaveInputAsText(tar_input_test, output_filepath, "tar", "test")
