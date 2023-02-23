@@ -47,14 +47,6 @@ def load_model(arch, model_path):
     arch.load_state_dict(checkpoint["model"])
 
 
-def count_epoch_on_large_dataset(train_loader_target, train_loader_source):
-    batch_number_t = len(train_loader_target)
-    batch_number = batch_number_t
-    batch_number_s = len(train_loader_source)
-    if batch_number_s > batch_number_t:
-        batch_number = batch_number_s
-    return batch_number
-
 
 @click.command()
 @click.option('--beta', nargs=2, type=float, default=[0.9, 0.98])
