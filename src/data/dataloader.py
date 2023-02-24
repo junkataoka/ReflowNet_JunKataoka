@@ -21,8 +21,8 @@ class ReflowDataset(Dataset):
 
         heatmap = torch.stack([torch.tensor(np.loadtxt(c, delimiter=" ")) for c in self.heatmap if recipe_idx == int(c.split("/")[-1].split("-")[0])], dim=0)
 
-        x = torch.stack([geom, heatmap], dim=1)
-        y = torch.concat([torch.FloatTensor(np.loadtxt(c, delimiter=" ")) for c in self.recipe if recipe_idx == int(c.split("/")[-1].split(".")[0])], dim=0)
+        x = torch.DoubleTensor(torch.stack([geom, heatmap], dim=1))
+        y = torch.concat([torch.DoubleTensor(np.loadtxt(c, delimiter=" ")) for c in self.recipe if recipe_idx == int(c.split("/")[-1].split(".")[0])], dim=0)
 
         return x, y
 

@@ -33,7 +33,7 @@ def generate_input(root_geom, root_heatmap, seq_len, num_geom, num_recipe, remov
     for j in range(num_geom):
         if j not in remove_geom:
 
-            out = np.zeros((num_recipe, seq_len, 2, 50, 50))
+            out = np.ones((num_recipe, seq_len, 2, 50, 50))
             die_path = f"M{j+1}_DIE.csv"
             pcb_path = f"M{j+1}_PCB.csv"
             trace_path = f"M{j+1}_Substrate.csv"
@@ -67,7 +67,7 @@ def generate_input(root_geom, root_heatmap, seq_len, num_geom, num_recipe, remov
 
 def generate_tardomain_input(root_geom, root_heatmap, seq_len, geom_id, num_recipe):
 
-    out = np.zeros((num_recipe, seq_len, 2, 50, 50))
+    out = np.ones((num_recipe, seq_len, 2, 50, 50))
 
     for i in range(num_recipe):
         for k in range(seq_len):

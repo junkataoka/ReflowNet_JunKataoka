@@ -77,8 +77,11 @@ test_environment:
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
+test:
+	$PYTHONPATH=. pytest -s
 
-
+train: 
+	$(PYTHON_INTERPRETER) src/train_model.py nomodel /home/junkataoka/reflownet_ver2/data
 
 #################################################################################
 # Self Documenting Commands                                                     #

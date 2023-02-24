@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+from torchmetrics.functional import pairwise_cosine_similarity
 
 
 class EncoderDecoderConvLSTM(nn.Module):
 
-    def __init__(self, nf, in_chan):
+    def __init__(self, nf, in_chan, seq_len):
         super(EncoderDecoderConvLSTM, self).__init__()
 
         self.encoder_1_convlstm = ConvLSTMCell(input_dim=in_chan,
@@ -12,22 +13,22 @@ class EncoderDecoderConvLSTM(nn.Module):
                                                kernel_size=3,
                                                bias=True)
 
-        self.decoder_1_convlstm = ConvLSTMCell(input_dim=nf*15,  # nf + 1
-                                               hidden_dim=nf*15,
+        self.decoder_1_convlstm = ConvLSTMCell(input_dim=nf*seq_len,  # nf + 1
+                                               hidden_dim=nf*seq_len,
                                                kernel_size=3,
                                                bias=True)
 
-        self.decoder_CNN = nn.Conv3d(in_channels=nf*15,
+        self.decoder_CNN = nn.Conv3d(in_channels=nf*seq_len,
                                      out_channels=1,
                                      kernel_size=(1, 3, 3),
                                      padding=(0, 1, 1))
 
-        self.Linear1_src = nn.Linear(17500, 2400)
-        self.Linear2_src = nn.Linear(2400, 600)
-        self.Linear3_src = nn.Linear(600, 7)
-        self.Linear1_tar = nn.Linear(17500, 2400)
-        self.Linear2_tar = nn.Linear(2400, 600)
-        self.Linear3_tar = nn.Linear(600, 7)
+        self.linear1_src = nn.Linear(17500, 2400)
+        self.linear2_src = nn.Linear(2400, 600)
+        self.linear3_src = nn.Linear(600, 7)
+        self.linear1_tar = nn.Linear(17500, 2400)
+        self.linear2_tar = nn.Linear(2400, 600)
+        self.linear3_tar = nn.Linear(600, 7)
         self.relu = nn.ReLU(inplace=True)
         self.nf = nf
 
@@ -62,21 +63,21 @@ class EncoderDecoderConvLSTM(nn.Module):
 
     def bottleneck_src(self, output_last):
 
-        ln = self.Linear1_src(output_last)
+        ln = self.linear1_src(output_last)
         ln_relu = self.relu(ln)
-        ln_last = self.Linear2_src(ln_relu)
+        ln_last = self.linear2_src(ln_relu)
         ln_last_relu = self.relu(ln_last)
-        pred = self.Linear3_src(ln_last_relu)
+        pred = self.linear3_src(ln_last_relu)
 
         return pred, ln_last, ln
 
     def bottleneck_tar(self, output_last):
 
-        ln = self.Linear1_tar(output_last)
+        ln = self.linear1_tar(output_last)
         ln_relu = self.relu(ln)
-        ln_last = self.Linear2_tar(ln_relu)
+        ln_last = self.linear2_tar(ln_relu)
         ln_last_relu = self.relu(ln_last)
-        pred = self.Linear3_tar(ln_last_relu)
+        pred = self.linear3_tar(ln_last_relu)
 
         return pred, ln_last, ln
 
@@ -104,11 +105,7 @@ class EncoderDecoderConvLSTM(nn.Module):
         h_t3, c_t3 = self.decoder_1_convlstm.init_hidden(
             batch_size=b, image_size=(h, w)
             )
-        output_last = self.autoencoder(
-            x, seq_len, future_step, h_t, c_t, h_t3, c_t3
-            )
 
-        outputs, feat1, feat2 = self.bottleneck(output_last)
         output_last = self.autoencoder(
             x, seq_len, future_step, h_t, c_t, h_t3, c_t3
             )
@@ -186,4 +183,8 @@ class ConvLSTMCell(nn.Module):
                 device=self.conv.weight.device)
                 )
 
+def da_cos_loss(src_x, tar_x):
+    sim_mat = pairwise_cosine_similarity(src_x, tar_x)
+    pos_sim_mat = 0.5 * (1 + sim_mat)
+    return pos_sim_mat.mean()
 
