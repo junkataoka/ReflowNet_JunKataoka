@@ -1,4 +1,4 @@
-.PHONY: clean data lint requirements sync_data_to_s3 sync_data_from_s3
+.PHONY: clean data lint requirements sync_data_to_s3 sync_data_from_s3 
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -25,14 +25,18 @@ requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
+delete: 
+	rm -rf data/processed/*
+
 ## Make Dataset
-data:
+data: delete
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
 ## Delete all compiled Python files
 clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
+	rm -rf ./data/processed/*
 
 ## Lint using flake8
 lint:
@@ -72,7 +76,7 @@ endif
 
 ## Test python environment is setup correctly
 test_environment:
-	$(PYTHON_INTERPRETER) test_environment.py
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py --data/raw data/processed
 
 #################################################################################
 # PROJECT RULES                                                                 #
@@ -81,7 +85,14 @@ test:
 	$PYTHONPATH=. pytest -s
 
 train: 
-	$(PYTHON_INTERPRETER) src/train_model.py nomodel /home/junkataoka/reflownet_ver2/data
+	$(PYTHON_INTERPRETER) src/train_model.py model_ID1/pretrained_model.ckpt data
+
+run_experimnents:
+
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed --test_recipe=0 --src_p=1.0 
+	$(PYTHON_INTERPRETER) src/pretrain_model.py data/processed --log=test0_notar_all --epoch_size=1
+	$(PYTHON_INTERPRETER) src/train_model.py data/processed --log=test0_notar_all --epoch_size=1
+
 
 #################################################################################
 # Self Documenting Commands                                                     #

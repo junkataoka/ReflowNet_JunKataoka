@@ -4,11 +4,16 @@ import logging
 import numpy as np
 import os
 import torch
+from glob import glob
+from collections import defaultdict
+import gc
+gc.set_threshold(0)
+np.random.seed(10)
 
-
-def generate_target(root_recipe, num_area, num_geom, num_recipe, remove_geom):
+def generate_output(root_recipe, num_area, num_geom, num_recipe, remove_geom):
 
     res = []
+    j = 0
     for j in range(num_geom):
         if j not in remove_geom:
             out = np.empty((num_recipe, num_area))
@@ -22,6 +27,7 @@ def generate_target(root_recipe, num_area, num_geom, num_recipe, remove_geom):
             res.append(out)
 
     res = np.concatenate(res, axis=0)
+
 
     return res
 
@@ -100,7 +106,6 @@ def generate_tardomain_input(root_geom, root_heatmap, seq_len, geom_id, num_reci
 def SaveInputAsText(array, output_filepath, domain, train):
 
     b, s, c, w, h = array.shape
-    assert c == 2
 
     for i in range(b):
         for j in range(s):
@@ -148,42 +153,25 @@ def MinMaxNormalize(input_tensor):
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
 @click.argument('output_filepath', type=click.Path())
-@click.option('--rm_geom', multiple=True, type=int, default=[None])
 @click.option('--target_geom', type=int, default=0)
 @click.option('--test_recipe', type=int, default=0)
-def main(input_filepath, output_filepath, rm_geom, target_geom, test_recipe):
+@click.option('--src_p', type=float, default=1.0)
+@click.option('--no_tar_geom', type=bool, default=True)
+def main(input_filepath, output_filepath, target_geom, test_recipe, src_p, no_tar_geom):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
+    if no_tar_geom:
+        rm_geom = [target_geom]
 
     # Create src domain output data
-    a = generate_target(
+    a = generate_output(
         root_recipe=os.path.join(input_filepath, "recipe_simulation"),
         num_area=7, num_geom=12, num_recipe=81, remove_geom=rm_geom)
 
-    target_tensor = torch.tensor(a).cpu().numpy()
-    SaveOutputAsText(target_tensor, output_filepath, "src", "train")
-
-    # Create tar domain output data for testing
-    a = generate_target(
-        root_recipe=os.path.join(input_filepath, "recipe_experiment"),
-        num_area=7, num_geom=12, num_recipe=3,
-        remove_geom=[i for i in range(12) if i != target_geom]
-        )
-    target_tensor = torch.tensor(a).cpu()
-    target_test = torch.index_select(
-        target_tensor, dim=0, index=torch.tensor([test_recipe])
-        )
-    SaveOutputAsText(target_test, output_filepath, "tar", "test")
-
-    # Create tar domain output data for training
-    target_train = torch.index_select(
-        target_tensor, dim=0,
-        index=torch.tensor([i for i in range(len(target_tensor)) if i != test_recipe])
-        )
-    SaveOutputAsText(target_train, output_filepath, "tar", "train")
+    src_target_tensor = torch.tensor(a).cpu().numpy()
 
     # Create src domain input data
     a = generate_input(
@@ -197,7 +185,32 @@ def main(input_filepath, output_filepath, rm_geom, target_geom, test_recipe):
     src_input = (input_tensor - res_min[None, None, :, None, None]) / \
         (res_max[None, None, :, None, None] - res_min[None, None, :, None, None])
     src_input = src_input.cpu().numpy()
-    SaveInputAsText(src_input, output_filepath, "src", "train")
+    indices = np.random.randint(0, len(src_input), int(len(src_input)*src_p))
+    SaveInputAsText(src_input[indices], output_filepath, "src", "train")
+    SaveOutputAsText(src_target_tensor[indices], output_filepath, "src", "train")
+    gc.collect()
+
+    # Create tar domain output data for testing
+    a = generate_output(
+        root_recipe=os.path.join(input_filepath, "recipe_experiment"),
+        num_area=7, num_geom=12, num_recipe=3,
+        remove_geom=[i for i in range(12) if i != target_geom]
+        )
+    tar_target_tensor = torch.tensor(a).cpu()
+    tar_target_test = torch.index_select(
+        tar_target_tensor, dim=0, index=torch.tensor([test_recipe])
+        )
+    SaveOutputAsText(tar_target_test, output_filepath, "tar", "test")
+    gc.collect()
+
+    # Create tar domain output data for training
+    tar_target_train = torch.index_select(
+        tar_target_tensor, dim=0,
+        index=torch.tensor([i for i in range(len(tar_target_tensor)) if i != test_recipe])
+        )
+
+    SaveOutputAsText(tar_target_train, output_filepath, "tar", "train")
+    gc.collect()
 
     # Create tar domain input data
     a = generate_tardomain_input(
@@ -216,6 +229,7 @@ def main(input_filepath, output_filepath, rm_geom, target_geom, test_recipe):
         )
     tar_input_train = tar_input_train.cpu().numpy()
     SaveInputAsText(tar_input_train, output_filepath, "tar", "train")
+    gc.collect()
 
     # Split tar domain input data (testing)
     tar_input_test = torch.index_select(
@@ -224,6 +238,7 @@ def main(input_filepath, output_filepath, rm_geom, target_geom, test_recipe):
         )
     tar_input_test = tar_input_test.cpu().numpy()
     SaveInputAsText(tar_input_test, output_filepath, "tar", "test")
+    gc.collect()
 
 
 if __name__ == '__main__':
