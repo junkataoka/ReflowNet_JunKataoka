@@ -1,0 +1,6 @@
+rm -rf data/processed/*
+Saved prediction
+rm -rf data/processed/*
+Saved prediction
+rm -rf data/processed/*
+Saved prediction

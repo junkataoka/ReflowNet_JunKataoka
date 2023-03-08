@@ -149,6 +149,10 @@ def MinMaxNormalize(input_tensor):
 
     return res_min, res_max
 
+def MeanNormalize(input_tensor):
+    mean, std = input_tensor.mean([0, 1, 3, 4]), input_tensor.std([0,1, 3, 4])
+
+    return mean, std
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
@@ -165,6 +169,8 @@ def main(input_filepath, output_filepath, target_geom, test_recipe, src_p, no_ta
     logger.info('making final data set from raw data')
     if no_tar_geom:
         rm_geom = [target_geom]
+    else:
+        rm_geom = [None]
 
     # Create src domain output data
     a = generate_output(

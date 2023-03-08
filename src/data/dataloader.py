@@ -9,7 +9,7 @@ class ReflowDataset(Dataset):
         self.geom = sorted(glob.glob(os.path.join(geom, "*")))
         self.heatmap = sorted(glob.glob(os.path.join(heatmap, "*")))
         self.recipe = sorted(glob.glob(os.path.join(recipe, "*")))
-        self.recipe_num = np.unique([int(c.split("/")[-1].split(".")[0]) for c in self.recipe])
+        self.recipe_num = [int(c.split("/")[-1].split(".")[0]) for c in self.recipe]
 
     def __len__(self):
         return len(self.recipe_num)
@@ -20,7 +20,7 @@ class ReflowDataset(Dataset):
         geom = torch.stack([torch.tensor(np.loadtxt(c, delimiter=" ")) for c in self.geom if recipe_idx == int(c.split("/")[-1].split("-")[0])], dim=0)
 
         x = torch.DoubleTensor(torch.stack([geom, heatmap], dim=1))
-        y = torch.concat([torch.DoubleTensor(np.loadtxt(c, delimiter=" ")) for c in self.recipe if recipe_idx == int(c.split("/")[-1].split(".")[0])], dim=0)
+        y = torch.cat([torch.DoubleTensor(np.loadtxt(c, delimiter=" ")) for c in self.recipe if recipe_idx == int(c.split("/")[-1].split(".")[0])], dim=0)
 
         return x, y
 

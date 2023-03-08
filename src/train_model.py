@@ -122,8 +122,8 @@ def main(n_hidden_dim, lr, batch_size, epoch_size, data_path, channel, seq_len, 
             tar_x = tar_x.double().cuda()
             tar_y = torch.log(tar_y).double().cuda()
             loss_dict_train = train(src_x, src_y, tar_x, tar_y, model, optimizer, criterions, hyper_params, num_areas=num_areas) 
-            run.log(loss_dict_train, step=10)
-            run.log({"n_iter": (i+1) * (1+epoch)}, step=10)
+            run.log(loss_dict_train)
+            run.log({"n_iter": (i+1) * (1+epoch)})
         
         for i in range(len(test_tar_dataloader)):
 
@@ -131,12 +131,12 @@ def main(n_hidden_dim, lr, batch_size, epoch_size, data_path, channel, seq_len, 
             tar_x = tar_x.double().cuda()
             tar_y = torch.log(tar_y).double().cuda()
             loss_dict_val = validate(tar_x, tar_y, criterions=criterions, model=model, num_areas=num_areas)
-            run.log(loss_dict_val, step=1)
+            run.log(loss_dict_val)
 
         adjust_learning_rate(optimizer, epoch, epoch_size, lr)
         
-    run.finish()
     torch.save(model.state_dict(), f"./models/{log}/trained.ckpt")
+    run.finish()
     
 if __name__ == '__main__':
     main()
