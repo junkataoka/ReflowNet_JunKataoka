@@ -155,6 +155,10 @@ def MinMaxNormalize(input_tensor):
 
     return res_min, res_max
 
+def MeanNormalize(input_tensor):
+    mean, std = input_tensor.mean([0, 1, 3, 4]), input_tensor.std([0,1, 3, 4])
+
+    return mean, std
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))

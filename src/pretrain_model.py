@@ -39,7 +39,6 @@ def validate(tar_x_test, tar_y_test, criterions, model, num_areas):
 
         tar_loss = criterions["mse"](tar_output, tar_y_test)
         print(f"Tar Loss: {tar_loss}")
-
         return {"test_tar_loss": tar_loss}
 
 @click.command()
