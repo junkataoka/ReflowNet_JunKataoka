@@ -54,7 +54,7 @@ def validate(tar_x_test, tar_y_test, criterions, model, num_areas):
 @click.command()
 @click.option('--n_hidden_dim', nargs=1, type=int, default=3)
 @click.option('--lr', nargs=1, type=float, default=0.0005)
-@click.option('--batch_size', nargs=1, type=int, default=24)
+@click.option('--batch_size', nargs=1, type=int, default=48)
 @click.option('--epoch_size', nargs=1, type=int, default=100)
 @click.option('-channel', nargs=1, type=int, default=2)
 @click.option('-seq_len', nargs=1, type=int, default=15)
@@ -65,6 +65,14 @@ def main(n_hidden_dim, lr, batch_size, epoch_size, data_path, channel, seq_len, 
     # load model
     model = EncoderDecoderConvLSTM(nf=n_hidden_dim, in_chan=channel, seq_len=seq_len).double().cuda()
     load_model(model, log)
+
+    with torch.no_grad():
+        model.linear1_tar.weight.copy_(model.linear1_src.weight)
+        model.linear1_tar.bias.copy_(model.linear1_src.bias)
+        model.linear2_tar.weight.copy_(model.linear2_src.weight)
+        model.linear2_tar.bias.copy_(model.linear2_src.bias)
+        model.linear3_tar.weight.copy_(model.linear3_src.weight)
+        model.linear3_tar.bias.copy_(model.linear3_src.bias)
 
     # load dataloaders
     src_dataloader = generate_dataloader(
@@ -108,7 +116,7 @@ def main(n_hidden_dim, lr, batch_size, epoch_size, data_path, channel, seq_len, 
 
     for epoch in range(epoch_size):
 
-        hyper_params = {"lambda_tar": 0.01, "lambda_da": 2 / (1+math.exp(-1*10*epoch/epoch_size)) - 1}
+        hyper_params = {"lambda_tar": 0.001, "lambda_da": 2 / (1+math.exp(-1*10*epoch/epoch_size)) - 1}
         run.log(hyper_params)
         run.log({"epoch": epoch})
 
@@ -122,8 +130,8 @@ def main(n_hidden_dim, lr, batch_size, epoch_size, data_path, channel, seq_len, 
             tar_x = tar_x.double().cuda()
             tar_y = torch.log(tar_y).double().cuda()
             loss_dict_train = train(src_x, src_y, tar_x, tar_y, model, optimizer, criterions, hyper_params, num_areas=num_areas) 
-            run.log(loss_dict_train, step=10)
-            run.log({"n_iter": (i+1) * (1+epoch)}, step=10)
+            run.log(loss_dict_train)
+            run.log({"n_iter": (i+1) * (1+epoch)})
         
         for i in range(len(test_tar_dataloader)):
 
@@ -131,12 +139,12 @@ def main(n_hidden_dim, lr, batch_size, epoch_size, data_path, channel, seq_len, 
             tar_x = tar_x.double().cuda()
             tar_y = torch.log(tar_y).double().cuda()
             loss_dict_val = validate(tar_x, tar_y, criterions=criterions, model=model, num_areas=num_areas)
-            run.log(loss_dict_val, step=1)
+            run.log(loss_dict_val)
 
         adjust_learning_rate(optimizer, epoch, epoch_size, lr)
         
-    run.finish()
     torch.save(model.state_dict(), f"./models/{log}/trained.ckpt")
+    run.finish()
     
 if __name__ == '__main__':
     main()

@@ -116,6 +116,9 @@ def SaveInputAsText(array, output_filepath, domain, train):
                     imgtype = f"{train}-{domain}-HEATMAP"
 
                 img_path = os.path.join(output_filepath, imgtype)
+                if not os.path.exists(output_filepath):
+                    os.mkdir(output_filepath)
+
                 if not os.path.exists(img_path):
                     os.mkdir(img_path)
                 np.savetxt(os.path.join(img_path, f'{i}-{j}.txt'), array[i, j, k], fmt='%f')
@@ -126,6 +129,9 @@ def SaveOutputAsText(recipe, output_filepath, domain, train):
     b, a = recipe.shape
     imgtype = f"{train}-{domain}-RECIPE"
     img_path = os.path.join(output_filepath, imgtype)
+
+    if not os.path.exists(output_filepath):
+        os.mkdir(output_filepath)
     if not os.path.exists(img_path):
         os.mkdir(img_path)
 
@@ -165,6 +171,8 @@ def main(input_filepath, output_filepath, target_geom, test_recipe, src_p, no_ta
     logger.info('making final data set from raw data')
     if no_tar_geom:
         rm_geom = [target_geom]
+    else:
+        rm_geom = [None]
 
     # Create src domain output data
     a = generate_output(

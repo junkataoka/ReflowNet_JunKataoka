@@ -25,12 +25,6 @@ requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
-delete: 
-	rm -rf data/processed/*
-
-## Make Dataset
-data: delete
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
 ## Delete all compiled Python files
 clean:
@@ -81,18 +75,40 @@ test_environment:
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
-test:
-	$PYTHONPATH=. pytest -s
-
-train: 
-	$(PYTHON_INTERPRETER) src/train_model.py model_ID1/pretrained_model.ckpt data
-
+## Run experiments
 run_experimnents:
 
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed --test_recipe=0 --src_p=1.0 
-	$(PYTHON_INTERPRETER) src/pretrain_model.py data/processed --log=test0_notar_all --epoch_size=1
-	$(PYTHON_INTERPRETER) src/train_model.py data/processed --log=test0_notar_all --epoch_size=1
+	sbatch experiments.sh data/raw test0_notar_50 0 0.5 True
+	sbatch experiments.sh data/raw test1_notar_50 1 0.5 True
+	sbatch experiments.sh data/raw test2_notar_50 2 0.5 True
 
+	sbatch experiments.sh data/raw test0_withtar_50 0 0.5 False
+	sbatch experiments.sh data/raw test1_withtar_50 1 0.5 False
+	sbatch experiments.sh data/raw test2_withtar_50 2 0.5 False
+
+	sbatch experiments.sh data/raw test0_notar_75 0 0.75 True
+	sbatch experiments.sh data/raw test1_notar_75 1 0.75 True
+	sbatch experiments.sh data/raw test2_notar_75 2 0.75 True
+
+	sbatch experiments.sh data/raw test0_withtar_75 0 0.75 False
+	sbatch experiments.sh data/raw test1_withtar_75 1 0.75 False
+	sbatch experiments.sh data/raw test2_withtar_75 2 0.75 False
+
+	sbatch experiments.sh data/raw test0_notar_100 0 1.0 True
+	sbatch experiments.sh data/raw test1_notar_100 1 1.0 True
+	sbatch experiments.sh data/raw test2_notar_100 2 1.0 True
+
+	sbatch experiments.sh data/raw test0_withtar_100 0 1.0 False
+	sbatch experiments.sh data/raw test1_withtar_100 1 1.0 False
+	sbatch experiments.sh data/raw test2_withtar_100 2 1.0 False
+	
+	sbatch experiments.sh data/raw test0_notar_25 0 0.25 True
+	sbatch experiments.sh data/raw test1_notar_25 1 0.25 True
+	sbatch experiments.sh data/raw test2_notar_25 2 0.25 True
+
+	sbatch experiments.sh data/raw test0_withtar_25 0 0.25 False
+	sbatch experiments.sh data/raw test1_withtar_25 1 0.25 False
+	sbatch experiments.sh data/raw test2_withtar_25 2 0.25 False
 
 #################################################################################
 # Self Documenting Commands                                                     #
